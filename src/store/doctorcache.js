@@ -1,22 +1,31 @@
 
 const cache = new Map();
 
-export async function fetchWithCache(url) {
+export async function fetchWithCache(url, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+
+  // Do not cache POST, PUT, PATCH, or DELETE requests.
+  if (method !== "GET") {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`);
+    }
+
+    return response.json();
+  }
+
   if (cache.has(url)) {
-    console.log("[Cache] Using cached data:", url);
     return cache.get(url);
   }
 
-  console.log("[Cache] Fetching from API:", url);
-
-  const response = await fetch(url);
+  const response = await fetch(url, options);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch data from API");
+    throw new Error(`Request failed (${response.status})`);
   }
 
   const data = await response.json();
-
   cache.set(url, data);
 
   return data;
@@ -24,5 +33,4 @@ export async function fetchWithCache(url) {
 
 export function clearDoctorCache() {
   cache.clear();
-  console.log("[Cache] Cleared");
 }
